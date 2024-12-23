@@ -1,15 +1,14 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import multer from 'multer';
-import path from 'path';
-// import stripeRouter from './src/Backend-Codes/stripe.js';
-import preprocessRouter from './src/Backend-Codes/preprocess.js';  
-// import postprocessRouter from './src/Backend-Codes/postprocess.js';
-// import errorcheckerRouter from './src/Backend-Codes/errorchecker.js';
-// import serviceAccount from './serviceAccountKey.json';
-
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const multer = require('multer');
+const admin = require('firebase-admin');
+const path = require('path');
+// const stripeRouter = require('./src/Backend-Codes/stripe');
+const preprocessRouter = require('./src/Backend-Codes/preprocess');
+// const postprocessRouter = require('./src/Backend-Codes/postprocess');
+// const errorcheckerRouter = require('./src/Backend-Codes/errorchecker');
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3000;
@@ -17,15 +16,7 @@ const PORT = process.env.BACKEND_PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configure CORS
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Update with your frontend URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true, 
-};
-
-app.use(cors(corsOptions));
+app.use(cors());
 
 
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -55,20 +46,10 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-app.use('/preprocess', verifyToken, upload.array('images'), preprocessRouter);
+app.use('/preprocess', verifyToken, preprocessRouter);
 // app.use('/postprocess', postprocessRouter); 
 // app.use('/errorchecker', errorcheckerRouter); 
 // app.use('/stripe', stripeRouter);
-
-
-
-const __dirname = path.resolve();
-app.use(express.static(path.join(__dirname, 'build')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
-
 
 app.use((err, _req, res, _next) => {
   console.error('Error:', err);

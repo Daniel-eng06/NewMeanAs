@@ -1,8 +1,6 @@
-import admin from 'firebase-admin';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
-import dotenv from 'dotenv';
-import serviceAccountKey from './serviceAccountKey.json'
+const admin = require('firebase-admin');
+const dotenv = require('dotenv');
+const serviceAccountKey = require('./serviceAccountKey.json');
   
 dotenv.config();
 admin.initializeApp({
@@ -14,5 +12,5 @@ admin.initializeApp({
 const firestore = admin.firestore()
 const storage = admin.storage().bucket();
 
-export {firestore, storage}
+module.exports = {firestore, storage}
   

@@ -151,7 +151,7 @@ function Preprocess() {
 
       const userDocSnap = await getDoc(userDocRef);
 
-      console.log('reference fetched')
+      console.log('reference fetched', userDocSnap)
 
       if (!userDocSnap.exists()) {
         throw new Error('USER_ERROR:User profile not found');
@@ -196,10 +196,7 @@ function Preprocess() {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${idToken}`
         },
-        withCredentials: true,
         timeout: 300000,
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
       });
       
       console.log('Response:', response); 

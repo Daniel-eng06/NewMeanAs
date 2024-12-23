@@ -1,9 +1,8 @@
-import express from 'express';
-
-import dotenv from 'dotenv';
-import axios from 'axios';
-import multer from 'multer';
-import {firestore} from '../../firebase.js'
+const express = require('express');
+const dotenv = require('dotenv');
+const axios = require('axios');
+const multer = require('multer');
+const { firestore, storage } = require('../../firebase.js');
 
 dotenv.config();
 
@@ -87,30 +86,26 @@ router.post('/', upload.array('images'), async (req, res) => {
     };
     
     // Add a new document in collection "cities" with ID 'LA'
-    const projectRef = await firestore.collection('projects').set(data);
+    const projectRef = await firestore.collection('projects').add(data);
+    const validImageUrls = [];
 
-    // Upload images to Firebase Storage and get their URLs
-    const uploadedImageUrls = await Promise.all(files.map(async (file, index) => {
+    for (const file of files) {
       try {
-        // const storageRef = ref(storage, `uploads/${projectRef.id}_${index}.jpg`);
-        // const fileRef = storageRef.child(`uploads/${res.id}_${index}.jpg`);
-        // await storageRef.put(file)
-        // await uploadBytes(fileRef, file.buffer, { contentType: file.mimetype });
-        // return await getDownloadURL(fileRef);
-        // return await fileRef.getDownloadURL();
+        const fileName = `uploads/${Date.now()}_${file.originalname}`;
+        const upload = storage.file(fileName);
+
+        await upload.save(file.buffer, {
+          metadata: {
+            contentType: file.mimetype,
+          },
+        });
+        await upload.makePublic();
+
+         validImageUrls.push(`https://storage.googleapis.com/${storage.name}/${upload.name}`);
       } catch (uploadError) {
         console.error('Error uploading image:', uploadError);
-        throw new Error('Failed to upload image');
       }
-    }));
-    const validImageUrls = uploadedImageUrls.filter(url => url !== null);
-
-    // Respond to the client with the project ID and uploaded image URLs
-    res.status(200).json({
-      message: 'Project created successfully',
-      projectId: projectRef.id,
-      uploadedImageUrls: validImageUrls,
-    });
+    }
 
     // prompt text based on the analysis type
     let promptText;
@@ -336,21 +331,21 @@ router.post('/', upload.array('images'), async (req, res) => {
     }
 
     // Call callGPTAPI to process images and the prompt
-    const gptResponse = await callGPTAPI(uploadedImageUrls, promptText);
+    const gptResponse = await callGPTAPI(validImageUrls, promptText);
     const generatedResponse = gptResponse.content[0].text;
 
     // Save the generated response to Firestore
-    await firestore.collection('projects').set({
-      projectId: res.id,
+    await firestore.collection('projects').add({
+      projectId: projectRef.id,
       generatedResponse,
       timestamp: new Date(),
     });
 
-    res.status(200).json({id: res.id, response: generatedResponse });
+    res.status(200).json({id: projectRef.id, response: generatedResponse });
   } catch (error) {
     console.error('Error processing data:', error);
     res.status(500).json({ error: error.message || 'Failed to process data' });
   }
 });
 
-export default router;
+module.exports = router;
